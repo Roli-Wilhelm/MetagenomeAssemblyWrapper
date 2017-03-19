@@ -1,6 +1,5 @@
 #!/usr/bin/python
 import sys, os, re, getopt, glob, subprocess, os.path, numpy as np
-import cPickle as pickle
 import timeit
 import itertools
 
@@ -399,14 +398,14 @@ def idba(pe, sampleID):
 	os.system(' '.join([
 		"idba_ud",
 		"-o",
-		"./"+OUTPUT+"/ASSEMBLY/IDBA/"+sampleID+"/",
+		"./"+OUTPUT+"/IDBA/"+sampleID+"/",
 		"-r",
 		pe,
 		"--pre_correction"
 	]))		
 
 	if LOG == 'ON':
-		command.write(' '.join(["\nidba_ud","-o","./"+OUTPUT+"/ASSEMBLY/IDBA/"+sampleID+"/","-r",pe,"--pre_correction"])+"\n")		
+		command.write(' '.join(["\nidba_ud","-o","./"+OUTPUT+"/IDBA/"+sampleID+"/","-r",pe,"--pre_correction"])+"\n")		
 
 
 def ray(pe, se, sampleID):
@@ -416,7 +415,7 @@ def ray(pe, se, sampleID):
 		PROCESSORS,
 		"Ray",
 		"-o",
-		"./"+OUTPUT+"/ASSEMBLY/RAYMETA/"+sampleID,
+		"./"+OUTPUT+"/RAYMETA/"+sampleID,
 		"-i",
 		pe,
 		"-s",
@@ -430,7 +429,7 @@ def ray(pe, se, sampleID):
 			PROCESSORS,
 			"Ray",
 			"-o",
-			"./"+OUTPUT+"/ASSEMBLY/RAYMETA/"+sampleID,
+			"./"+OUTPUT+"/RAYMETA/"+sampleID,
 			"-i",
 			pe,
 			"-s",
@@ -446,7 +445,7 @@ def megahit(pe, se, sampleID):
 		"-r",
 		se,	
 		"-o",
-		"./"+OUTPUT+"/ASSEMBLY/MEGAHIT/"+sampleID,
+		"./"+OUTPUT+"/MEGAHIT/"+sampleID,
 		"--num-cpu-threads",
 		PROCESSORS
 	]))
@@ -459,7 +458,7 @@ def megahit(pe, se, sampleID):
 			"-r",
 			se,	
 			"-o",
-			"./"+OUTPUT+"/ASSEMBLY/MEGAHIT/"+sampleID,
+			"./"+OUTPUT+"/MEGAHIT/"+sampleID,
 			"--num-cpu-threads",
 			PROCESSORS
 		]))
@@ -474,7 +473,7 @@ def metaSPAdes(pe, se, sampleID):
 		se,	
 		"--meta",
 		"-o",
-		"./"+OUTPUT+"/ASSEMBLY/METASPADES/"+sampleID,
+		"./"+OUTPUT+"/METASPADES/"+sampleID,
 		"--threads",
 		PROCESSORS
 	]))
@@ -488,7 +487,7 @@ def metaSPAdes(pe, se, sampleID):
 			se,	
 			"--meta",
 			"-o",
-			"./"+OUTPUT+"/ASSEMBLY/METASPADES/"+sampleID,
+			"./"+OUTPUT+"/METASPADES/"+sampleID,
 			"--threads",
 			PROCESSORS
 		]))
@@ -721,7 +720,7 @@ if re.search("2", PROCESSES):
 		## IDBA
 		if re.search("1|IDBA", ASSEMBLER):
 			print "\n\n-----Using IDBA_UD-----\n"
-       	                os.makedirs('./' + OUTPUT + "/ASSEMBLY/IDBA/" + sampleID)
+       	                os.makedirs('./' + OUTPUT + "/IDBA/" + sampleID)
 
 			##If necessary convert from .fastq to .fasta
 			pe_fa = Convert_FQ(pe)
@@ -759,7 +758,7 @@ if re.search("2", PROCESSES):
 		## MEGAHIT
 		if re.search("3|MEGAHIT", ASSEMBLER):
 			print "\n\n-----Using MEGAHIT-----\n"
-       	                os.makedirs('./' + OUTPUT + "/ASSEMBLY/MEGAHIT/" + sampleID)
+       	                os.makedirs('./' + OUTPUT + "/MEGAHIT/" + sampleID)
 
 			# Run MEGAHIT  (super simple b/c it is flexible with file formats)
 			megahit(pe, se, sampleID)
@@ -767,7 +766,7 @@ if re.search("2", PROCESSES):
 		## metaSPAdes
 		if re.search("4|metaSPAdes", ASSEMBLER):
 			print "\n\n-----Using metaSPAdes-----\n"
-       	                os.makedirs('./' + OUTPUT + "/ASSEMBLY/METASPADES/" + sampleID)
+       	                os.makedirs('./' + OUTPUT + "/METASPADES/" + sampleID)
 
 			# Run metaSPAdes 
 			metaSPAdes(pe, se, sampleID)
