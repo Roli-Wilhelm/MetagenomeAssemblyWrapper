@@ -50,11 +50,13 @@ OPTIONAL:
 		-l	Specify Percentage of Read That Must Be Above Quality Score [default: 50]
 
 		## Related to Improving Assembly
-		-F <Y>	Use FLASH to extend paired end reads
+		-F <Y|B>	Use FLASH to extend paired end reads (option of just output flash <Y> or also both <B>)
 
 		## Related to Assembly
 		-M	Specify which assembler to use by either name or number
 			(1: IDBA, 2: RAYmeta, 3: MEGAHIT, 4: metaSPAdes, 5: SOAPdenovo2)
+
+		-L <OFF> Logging is set ON to by default. General info is stored in "run.log" and most all commands in "command.log
 
 UTILITY:
 This script will perform the basic quality control (i.e. remove artefacts from Illumina adapters and quality trim)and assemble metagenomes using a variety of methods."
@@ -70,14 +72,14 @@ NOTES:
 .tr - Adapter trimmed
 .fl - Flash merged
 
-- Logging is set ON to by default. Editorializing is logged to "run.log", while all commands executed to your files in "command.log". This can be shut off by changing the section of script "LOG = 'ON'" to 'OFF'
 
 
 Usage:  ./Metagenome_Assembly.py -o ASSEMBLED -i READ_FILES_LIST.tsv -S 1,2 -A NexteraPE -F Y -M IDBA
 
 
-Note: This script will need minor modification for how input is read if you're providing three files (i.e. two paired read files + orphaned reads)
-      You will also need to specify the specific location of the Trimmomatic jar file and adapter
+
+NOTE:	This script will need minor modification for how input is read if you're providing three files (i.e. two paired read files + orphaned reads)
+NOTE:	The path to Trimmomatic jar and adapters files is HARDCODED. You will have to change this if you're using Trimmomatic.
 """
 
 
@@ -493,6 +495,16 @@ def metaSPAdes(pe, se, sampleID):
 		]))
 	
 
+def makeoutput(directory)
+        if os.path.exists(directory):
+                GO_ON = "N"
+
+                while GO_ON != "Y":
+                        print "\n-- Output Folder Exists - Caution: Files May Be Over-written --\nShall We Continue? (Y)"
+                        GO_ON = raw_input()
+        else:
+                os.makedirs(directory)
+
 ####################################
 # IMPORT FILE LIST AND HOUSE KEEPING
 ####################################
@@ -524,6 +536,8 @@ if LOG == 'ON':
 #########################
 
 if re.search("1", PROCESSES):
+	OUTPUT_DICT = {}
+
 	print "\n-- Performing Quality Trimming --\n\n"
 
 	#Make Temporary Trim Folder
@@ -587,10 +601,11 @@ if re.search("1", PROCESSES):
 
 			# QC Second Raw Read file
 		        if file2 != 'interleaved':
-			        if EA:
+			        try:
+					EA
 					EAUTILS(file2,"./FOO.trim")
 
-				else:
+				except NameError:
 					FastX(file2,"./FOO.trim")
 
 				pe, se = split_paired("./FOO.trim.fq")
@@ -634,7 +649,28 @@ if re.search("1", PROCESSES):
 			Zip(file2)
 
 		## Merge Paired Reads using FLASH if user specified
-		if FLASH:
+		if FLASH == "B":
+			## Save Files and Move to Output Folder
+			os.system(' '.join([
+				"cp",
+				"./TRIM/combined-trim.fq",
+				"./"+OUTPUT+"/"+sampleID+".pe.qc.fq"
+			]))
+
+			os.system(' '.join([
+				"cp",
+				"./TRIM/se.trim.fq",
+				"./"+OUTPUT+"/"+sampleID+".se.qc.fq"
+			]))
+
+			os.system(' '.join([
+				"pigz -p",
+				PROCESSORS,
+				"./"+OUTPUT+"/"+sampleID+".pe.qc.fq",
+				"./"+OUTPUT+"/"+sampleID+".se.qc.fq"
+			]))
+
+		if FLASH == "Y" or FLASH == "B":
 			se, pe = flash("./TRIM/combined-trim.fq")
 
 			## Merge orphaned single read files with newly extended single reads from FLASH
@@ -686,13 +722,13 @@ if re.search("1", PROCESSES):
 			## Save output file names
 			OUTPUT_DICT[sampleID] = ["./"+OUTPUT+"/"+sampleID+".pe.qc.fq.gz","./"+OUTPUT+"/"+sampleID+".se.qc.fq.gz"]
 
-		## Remove Temp Folder "TRIM" and clean up
-		os.system(' '.join([
-			"rm -fr TRIM",
-			"out.extendedFrags.fastq",
-			"*pe",
-			"*.se"
-		]))
+	## Remove Temp Folder "TRIM" and clean up
+	os.system(' '.join([
+		"rm -fr TRIM",
+		"out.extendedFrags.fastq",
+		"*pe",
+		"*.se"
+	]))
 
 	if LOG == 'ON':
 		log.write("\n-- Quality Trimming --\n Following QC your File Names Are Now: \n"+str(OUTPUT_DICT))
@@ -720,7 +756,7 @@ if re.search("2", PROCESSES):
 		## IDBA
 		if re.search("1|IDBA", ASSEMBLER):
 			print "\n\n-----Using IDBA_UD-----\n"
-       	                os.makedirs('./' + OUTPUT + "/IDBA/" + sampleID)
+       	                makeoutput(OUTPUT + "/IDBA/" + sampleID)
 
 			##If necessary convert from .fastq to .fasta
 			pe_fa = Convert_FQ(pe)
@@ -745,7 +781,7 @@ if re.search("2", PROCESSES):
 			se_fa = Convert_FQ(se)
 
 			## Run Ray-meta
-			ray(pe, se, sampleID)
+			ray(pe_fa, se_fa, sampleID)
 
 			## Zip FASTA
 			Zip(pe_fa)
@@ -758,7 +794,7 @@ if re.search("2", PROCESSES):
 		## MEGAHIT
 		if re.search("3|MEGAHIT", ASSEMBLER):
 			print "\n\n-----Using MEGAHIT-----\n"
-       	                os.makedirs('./' + OUTPUT + "/MEGAHIT/" + sampleID)
+       	                makeoutput(OUTPUT + "/MEGAHIT/" + sampleID)
 
 			# Run MEGAHIT  (super simple b/c it is flexible with file formats)
 			megahit(pe, se, sampleID)
@@ -766,7 +802,7 @@ if re.search("2", PROCESSES):
 		## metaSPAdes
 		if re.search("4|metaSPAdes", ASSEMBLER):
 			print "\n\n-----Using metaSPAdes-----\n"
-       	                os.makedirs('./' + OUTPUT + "/METASPADES/" + sampleID)
+       	                makeoutput(OUTPUT + "/METASPADES/" + sampleID)
 
 			# Run metaSPAdes 
 			metaSPAdes(pe, se, sampleID)
@@ -776,8 +812,10 @@ if re.search("2", PROCESSES):
 		Zip(pe)
 		Zip(se)
 
-log.close()
-command.close()
-end = timeit.default_timer()
 
+if LOG == 'ON':
+	log.close()
+	command.close()
+
+end = timeit.default_timer()
 print end - now
