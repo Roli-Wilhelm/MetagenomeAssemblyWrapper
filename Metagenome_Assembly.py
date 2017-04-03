@@ -24,10 +24,10 @@ DEPENDENCIES:
 		-FastX Toolkit (built with v.0.7)
 		-khmer (built with v.1.0)
 		-Any of : 	
-				-IDBA (built with v.1.1.1)
-				-RAY-meta (built with v.v2.3.1)
-				-MEGAHIT (built with v1.0.4-beta)
-				-metaSPAdes (built with v.3.10.1)
+			-IDBA (built with v.1.1.1)
+			-RAY-meta (built with v.v2.3.1)
+			-MEGAHIT (built with v1.0.4-beta)
+			-metaSPAdes (built with v.3.10.1)
 
 OPTIONAL SOFTWARE:
 		-Trimmomatic (built with v.0.36)
@@ -50,11 +50,11 @@ OPTIONAL:
 		-l	Specify Percentage of Read That Must Be Above Quality Score [default: 50]
 
 		## Related to Improving Assembly
-		-F <Y|B>	Use FLASH to extend paired end reads (option of just output flash <Y> or also both <B>)
+		-F <Y|B>        Use FLASH to extend paired end reads with "Y", or output unmerged and merged with "B"
 
 		## Related to Assembly
 		-M	Specify which assembler to use by either name or number
-			(1: IDBA, 2: RAYmeta, 3: MEGAHIT, 4: metaSPAdes, 5: SOAPdenovo2)
+			(1: IDBA, 2: RAYmeta, 3: MEGAHIT, 4: metaSPAdes)
 
 		-L <OFF> Logging is set ON to by default. General info is stored in "run.log" and most all commands in "command.log
 
@@ -372,8 +372,8 @@ def trimmomatic(file1, file2):
 	## Combined Orphaned Reads
 	os.system(' '.join([
 		"cat",
-		"./TRIM/s1_se.trim",
-		"./TRIM/s2_se.trim",
+		"./TRIM/s1_se",
+		"./TRIM/s2_se",
 		"> ./TRIM/combined.se.fq"
 	]))
 
@@ -570,11 +570,31 @@ if re.search("1", PROCESSES):
 		        try:
 				EA
 				EAUTILS(pe,"./TRIM/combined-trim.fq")
-				EAUTILS(se,"./TRIM/se.trim")
+				EAUTILS(se,"./TRIM/se.trim.fq")
 
 		        except NameError: #Or DEFAULT: FastX Toolkit
 				FastX(pe,"./TRIM/combined-trim.fq")
-				FastX(se,"./TRIM/se.trim")
+				FastX(se,"./TRIM/se.trim.fq")
+
+			pe, se = split_paired("./TRIM/combined-trim.fq")
+
+			os.system(' '.join([
+				"mv",
+				pe,
+				"./TRIM/combined-trim.fq"
+			]))
+
+			os.system(' '.join([
+				"cat",
+				se,
+				"./TRIM/se.trim.fq"
+			]))
+
+			os.system(' '.join([
+				"rm",
+				se
+			]))
+
 		else:
 			## Run Quality Filtering
 		        try:
