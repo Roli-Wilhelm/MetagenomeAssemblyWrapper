@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/home/roli/anaconda3/envs/py27/bin/python
 import sys, os, re, getopt, glob, subprocess, os.path, numpy as np
 import timeit
 import itertools
@@ -6,11 +6,11 @@ import itertools
 now = timeit.default_timer()
 
 Usage = """
-Usage:  ./Metagenome_Assembly.py -o ASSEMBLED -i READ_FILES_LIST.tsv -S 1,2 -A NexteraPE -F Y -M IDBA
+Usage:  ./Metagenome_Assembly.py -o ASSEMBLED -i READ_FILES_LIST.tsv -S 1,2 -A NexteraPE -F Y -M IDBA -p 20
 
 REQUIRED ARGUMENTS:
 		-o	output directory
-	
+
                 -i	your input file names in the form of a .tsv file with three columns : "SampleID", "Forward PE" and "Reverse PE"
 			(If reads are already interleaved, do not provide a third column) 
 			(files can be compressed as either ".gz" or ".bz2")
@@ -23,7 +23,7 @@ REQUIRED ARGUMENTS:
 DEPENDENCIES:
 		-FastX Toolkit (built with v.0.7)
 		-khmer (built with v.1.0)
-		-Any of : 	
+		-Any of :
 			-IDBA (built with v.1.1.1)
 			-RAY-meta (built with v.v2.3.1)
 			-MEGAHIT (built with v1.0.4-beta)
@@ -33,7 +33,7 @@ OPTIONAL SOFTWARE:
 		-Trimmomatic (built with v.0.36)
 		-FLASH (built with v.2.0)
                 -EA-UTILS
-	
+
 OPTIONAL:
 		## Related To Adapter Removal
 		-A 	Specify whether to Remove Illumina Adapters using Trimmomatic
@@ -54,7 +54,7 @@ OPTIONAL:
 
 		## Related to Assembly
 		-M	Specify which assembler to use by either name or number
-			(1: IDBA, 2: RAYmeta, 3: MEGAHIT, 4: metaSPAdes)
+			(1: idba, 2: raymeta, 3: megahit, 4: metaspades)
 
 		-L <OFF> Logging is set ON to by default. General info is stored in "run.log" and most all commands in "command.log
 
@@ -74,7 +74,7 @@ NOTES:
 
 
 
-Usage:  ./Metagenome_Assembly.py -o ASSEMBLED -i READ_FILES_LIST.tsv -S 1,2 -A NexteraPE -F Y -M IDBA
+Usage:  ./Metagenome_Assembly.py -o ASSEMBLED -i READ_FILES_LIST.tsv -S 1,2 -A NexteraPE -F Y -M IDBA -p 20
 
 
 
@@ -180,10 +180,9 @@ def UnZip(file):
         	file = re.sub(".bz2","", file)
 
 	if re.search(".gz", file):
-		os.system(' '.join([
-			"pigz -d -p",
-			PROCESSORS,
-			file,
+		print(' '.join([
+			"pigz -d",
+			file
 		]))
 
 		# Remove zip extension from name values
@@ -192,15 +191,15 @@ def UnZip(file):
 	return file
 
 def Zip(file):
-	os.system(' '.join([
+	print(' '.join([
 		"pigz -p",
 		PROCESSORS,
 		file,
 	]))
-	
+
 
 def Interleave(sampleID, file):
-	os.system(' '.join([
+	print(' '.join([
 		"interleave-reads.py",
 		file,
 		interleave,
@@ -216,20 +215,20 @@ def Interleave(sampleID, file):
                 	">",
 	                "./"+OUTPUT+"/"+sampleID+".pe.fq"
                	]))
-			
+
 	file = "./"+OUTPUT+"/"+sampleID+".pe.fq"
 
 	return file
 
 
 def Convert_FQ(x):
-	os.system(' '.join([
+	print(' '.join([
 		"fastq_to_fasta -n -i",
 		x,
 		"-o",
 		re.sub("fq|fastq","fasta",x)
 	]))
-	
+
 	if LOG == 'ON':
 		command.write(' '.join([
 			"\nfastq_to_fasta -n -i",
@@ -237,14 +236,13 @@ def Convert_FQ(x):
                         "-o",
        	                re.sub("fq|fastq","fasta",x)
                 ]))
-			
+
 	x = re.sub("fq|fastq","fasta",x)
 
 	return x
 
-		
 def FastX(IN,OUT):
-        os.system(' '.join([
+        print(' '.join([
                 "fastq_quality_filter",
                 "-Q"+QUAL_FORMAT,
                 "-q"+MIN_QUAL,
@@ -299,8 +297,8 @@ def EAUTILS(IN,OUT):
         os.system('rm ./adapter-file.fq')
 
 
-def split_paired(file):
-	os.system(' '.join([
+def separate_paired_orphaned(file):
+	print(' '.join([
 		"extract-paired-reads.py",
 		file
 	]))
@@ -311,12 +309,28 @@ def split_paired(file):
 	name = file.split("/")[len(file.split("/"))-1]
 	return name+".pe", name+".se"
 
+def deinterleave(file):
+	name = file.split("/")[len(file.split("/"))-1]
+
+	print(' '.join([
+		"split-paired-reads.py",
+		"-1",
+		name+".R1",
+		"-2",
+		name+".R2",
+		file
+	]))
+
+	if LOG == 'ON':
+		command.write("\nsplit-paired-reads.py "+file)
+
+	return name+".R1", name+".R2"
 
 def flash(file):
 	if LOG == 'ON':
 		log.write("\nYou Selected To Merge Paired Reads Using FLASH.\n")
 
-	os.system(' '.join([
+	print(' '.join([
 		"flash --interleaved",
 		file,
 	]))
@@ -324,7 +338,7 @@ def flash(file):
 	if LOG == 'ON':
 		command.write("\nflash --interleaved -z "+file)
 
-	os.system(' '.join([
+	print(' '.join([
 		"rm *.hist*",
 		file,
 	]))
@@ -340,25 +354,25 @@ def trimmomatic(file1, file2):
 		log.write("\nYou performed adapter trimming with"+ADAPTER+"as the adapter type.\n")
 
 	## Run Trimmomatic for Adapter Removal
-	os.system(' '.join([
-		"java -jar /home/roli/Software/Trimmomatic-0.36/trimmomatic-0.36.jar PE",
+	print(' '.join([
+		"java -jar /opt/trimmomatic-0.36/trimmomatic-0.36.jar PE",
 		file1,
 		file2,
 		"./TRIM/s1_pe ./TRIM/s1_se ./TRIM/s2_pe ./TRIM/s2_se",
-		"ILLUMINACLIP:/home/roli/Software/Trimmomatic-0.36/adapters/"+ADAPTER+"-PE.fa:2:30:10"
+		"ILLUMINACLIP:/opt/trimmomatic-0.36/adapters/"+ADAPTER+"-PE.fa:2:30:10"
 	]))
 
 	if LOG == 'ON':
 		command.write(' '.join([
-			"java -jar /home/roli/Software/Trimmomatic-0.36/trimmomatic-0.36.jar PE",
+			"java -jar /opt/trimmomatic-0.36/trimmomatic-0.36.jar PE",
 			file1,
 			file2,
 			"./TRIM/s1_pe ./TRIM/s1_se ./TRIM/s2_pe ./TRIM/s2_se",
-			"ILLUMINACLIP:/home/roli/Software/Trimmomatic-0.36/adapters/"+ADAPTER+"-PE.fa:2:30:10"
+			"ILLUMINACLIP:/opt/trimmomatic-0.36/adapters/"+ADAPTER+"-PE.fa:2:30:10"
 		]))
 
 	## Interleave Reads from the two paired ends files
-	os.system(' '.join([
+	print(' '.join([
 		"interleave-reads.py ./TRIM/s?_pe",
 		"> ./TRIM/combined.pe.fq"
 	]))
@@ -370,7 +384,7 @@ def trimmomatic(file1, file2):
 		]))
 
 	## Combined Orphaned Reads
-	os.system(' '.join([
+	print(' '.join([
 		"cat",
 		"./TRIM/s1_se",
 		"./TRIM/s2_se",
@@ -404,7 +418,7 @@ def idba(pe, sampleID):
 		"-r",
 		pe,
 		"--pre_correction"
-	]))		
+	]))
 
 	if LOG == 'ON':
 		command.write(' '.join(["\nidba_ud","-o","./"+OUTPUT+"/IDBA/"+sampleID+"/","-r",pe,"--pre_correction"])+"\n")		
@@ -438,14 +452,14 @@ def ray(pe, se, sampleID):
 			se,
 		]))
 
-	
+
 def megahit(pe, se, sampleID):
 	os.system(' '.join([
 		"megahit",
 		"--12",
 		pe,
 		"-r",
-		se,	
+		se,
 		"-o",
 		"./"+OUTPUT+"/MEGAHIT/"+sampleID,
 		"--num-cpu-threads",
@@ -458,21 +472,20 @@ def megahit(pe, se, sampleID):
 			"--12",
 			pe,
 			"-r",
-			se,	
+			se,
 			"-o",
 			"./"+OUTPUT+"/MEGAHIT/"+sampleID,
 			"--num-cpu-threads",
 			PROCESSORS
 		]))
 
-	
 def metaSPAdes(pe, se, sampleID):
 	os.system(' '.join([
 		"spades.py",
 		"--pe1-12",
 		pe,
 		"-s",
-		se,	
+		se,
 		"--meta",
 		"-o",
 		"./"+OUTPUT+"/METASPADES/"+sampleID,
@@ -486,16 +499,15 @@ def metaSPAdes(pe, se, sampleID):
 			"--pe1-12",
 			pe,
 			"-s",
-			se,	
+			se,
 			"--meta",
 			"-o",
 			"./"+OUTPUT+"/METASPADES/"+sampleID,
 			"--threads",
 			PROCESSORS
 		]))
-	
 
-def makeoutput(directory)
+def makeoutput(directory):
         if os.path.exists(directory):
                 GO_ON = "N"
 
@@ -561,8 +573,8 @@ if re.search("1", PROCESSES):
 		## Run TRIMMOMATIC
 		if ADAPTER:
 			if file2 == 'interleaved':
-				file1_mod,file2_mod = split_paired(file1)
-				pe, se = trimmomatic(file1_mod,file2_mod)
+				R1,R2 = deinterleave(file1)
+				pe, se = trimmomatic(R1,R2)
 			else:
 				pe, se = trimmomatic(file1,file2)
 
@@ -575,26 +587,6 @@ if re.search("1", PROCESSES):
 		        except NameError: #Or DEFAULT: FastX Toolkit
 				FastX(pe,"./TRIM/combined-trim.fq")
 				FastX(se,"./TRIM/se.trim.fq")
-
-			pe, se = split_paired("./TRIM/combined-trim.fq")
-
-			os.system(' '.join([
-				"mv",
-				pe,
-				"./TRIM/combined-trim.fq"
-			]))
-
-			os.system(' '.join([
-				"cat",
-				se,
-				"./TRIM/se.trim.fq"
-			]))
-
-			os.system(' '.join([
-				"rm",
-				se
-			]))
-
 		else:
 			## Run Quality Filtering
 		        try:
@@ -604,16 +596,16 @@ if re.search("1", PROCESSES):
 		        except NameError: #Or DEFAULT: FastX Toolkit
 				FastX(file1,"./TRIM/combined-trim.fq")
 
-			pe, se = split_paired("./TRIM/combined-trim.fq")
+			pe, se = separate_paired_orphaned("./TRIM/combined-trim.fq")
 
 			#Re-locate Files for consistent processing
-			os.system(' '.join([
+			print(' '.join([
 				"mv",
 				pe,
 				"./TRIM/combined-trim.fq"
 			]))
 
-			os.system(' '.join([
+			print(' '.join([
 				"mv",
 				se,
 				"./TRIM/se.trim.fq"
@@ -628,9 +620,9 @@ if re.search("1", PROCESSES):
 				except NameError:
 					FastX(file2,"./FOO.trim")
 
-				pe, se = split_paired("./FOO.trim.fq")
+				pe, se = separate_paired_orphaned("./FOO.trim.fq")
 
-				os.system(' '.join([
+				print(' '.join([
 					"cat",
 					pe,
 					"./TRIM/combined-trim.fq",
@@ -638,13 +630,13 @@ if re.search("1", PROCESSES):
 					"./FOO.fq"
 				]))
 
-				os.system(' '.join([
+				print(' '.join([
 					"mv",
 					"./FOO.fq",
 					"./TRIM/combined-trim.fq"
 				]))
 
-				os.system(' '.join([
+				print(' '.join([
 					"cat",
 					se,
 					"./TRIM/se.trim.fq",
@@ -652,13 +644,13 @@ if re.search("1", PROCESSES):
 					"./FOO.fq"
 				]))
 
-				os.system(' '.join([
+				print(' '.join([
 					"mv",
 					"./FOO.fq",
 					"./TRIM/se.trim.fq"
 				]))
 
-				os.system(' '.join([
+				print(' '.join([
 					"rm",
 					"./FOO.trim.fq"
 				]))
@@ -671,19 +663,19 @@ if re.search("1", PROCESSES):
 		## Merge Paired Reads using FLASH if user specified
 		if FLASH == "B":
 			## Save Files and Move to Output Folder
-			os.system(' '.join([
+			print(' '.join([
 				"cp",
 				"./TRIM/combined-trim.fq",
 				"./"+OUTPUT+"/"+sampleID+".pe.qc.fq"
 			]))
 
-			os.system(' '.join([
+			print(' '.join([
 				"cp",
 				"./TRIM/se.trim.fq",
 				"./"+OUTPUT+"/"+sampleID+".se.qc.fq"
 			]))
 
-			os.system(' '.join([
+			print(' '.join([
 				"pigz -p",
 				PROCESSORS,
 				"./"+OUTPUT+"/"+sampleID+".pe.qc.fq",
@@ -694,7 +686,7 @@ if re.search("1", PROCESSES):
 			se, pe = flash("./TRIM/combined-trim.fq")
 
 			## Merge orphaned single read files with newly extended single reads from FLASH
-			os.system(' '.join([
+			print(' '.join([
 				"cat",
 				se,
 				"./TRIM/se.trim.fq",
@@ -702,13 +694,13 @@ if re.search("1", PROCESSES):
 				"./"+OUTPUT+"/"+sampleID+".se.qc.fl.fq"
 			]))
 
-			os.system(' '.join([
+			print(' '.join([
 				"mv",
 				pe,
 				"./"+OUTPUT+"/"+sampleID+".pe.qc.fl.fq"
 			]))
 
-			os.system(' '.join([
+			print(' '.join([
 				"pigz -p",
 				PROCESSORS,
 				"./"+OUTPUT+"/"+sampleID+".pe.qc.fl.fq",
@@ -720,19 +712,19 @@ if re.search("1", PROCESSES):
 
 		else:
 			## Compress Files and Move to Output Folder
-			os.system(' '.join([
+			print(' '.join([
 				"mv",
 				"./TRIM/combined-trim.fq",
 				"./"+OUTPUT+"/"+sampleID+".pe.qc.fq"
 			]))
 
-			os.system(' '.join([
+			print(' '.join([
 				"mv",
 				"./TRIM/se.trim.fq",
 				"./"+OUTPUT+"/"+sampleID+".se.qc.fq"
 			]))
 
-			os.system(' '.join([
+			print(' '.join([
 				"pigz -p",
 				PROCESSORS,
 				"./"+OUTPUT+"/"+sampleID+".pe.qc.fq",
@@ -743,7 +735,7 @@ if re.search("1", PROCESSES):
 			OUTPUT_DICT[sampleID] = ["./"+OUTPUT+"/"+sampleID+".pe.qc.fq.gz","./"+OUTPUT+"/"+sampleID+".se.qc.fq.gz"]
 
 	## Remove Temp Folder "TRIM" and clean up
-	os.system(' '.join([
+	print(' '.join([
 		"rm -fr TRIM",
 		"out.extendedFrags.fastq",
 		"*pe",
@@ -764,9 +756,12 @@ if re.search("2", PROCESSES):
 	# Check for existence of OUTPUT_DICT
 	try:
 		ASSEMBLE_DICT = OUTPUT_DICT
-		
+
 	except NameError:
 		ASSEMBLE_DICT = FILE_DICT
+
+	if re.search("3|megahit", ASSEMBLER):
+		makeoutput(OUTPUT+"/MEGAHIT/")
 
 	for sampleID, value in ASSEMBLE_DICT.iteritems():
 		# Unzip Files
@@ -774,7 +769,7 @@ if re.search("2", PROCESSES):
 		se = UnZip(value[1])
 
 		## IDBA
-		if re.search("1|IDBA", ASSEMBLER):
+		if re.search("1|idba", ASSEMBLER):
 			print "\n\n-----Using IDBA_UD-----\n"
        	                makeoutput(OUTPUT + "/IDBA/" + sampleID)
 
@@ -784,18 +779,15 @@ if re.search("2", PROCESSES):
 			## Run IDBA
 			idba(pe_fa, sampleID)
 
-			## Zip FASTA
-			Zip(pe_fa)
-
 			print "\n\n--- Assembly Completed --- \n\nYou've Completed Assembly with IDBA.The files you are most interested in are entitled \"contig.fa\".\n" 
 
 		## RAYmeta
-		if re.search("2|RAYmeta", ASSEMBLER):
+		if re.search("2|raymeta", ASSEMBLER):
 			print "\n\n-----Using RAYmeta-----\n"
 
 			# Select KMER length
 			KMER = '39'
-	
+
 			# Convert from .fastq to .fasta if necessary
 			pe_fa = Convert_FQ(pe)
 			se_fa = Convert_FQ(se)
@@ -803,24 +795,19 @@ if re.search("2", PROCESSES):
 			## Run Ray-meta
 			ray(pe_fa, se_fa, sampleID)
 
-			## Zip FASTA
-			Zip(pe_fa)
-			Zip(se_fa)
-
 			print "\n\n--- Assembly Completed ---\n\nYou've Completed Assembly with RAY-meta. Be sure to look at the RAY-meta documentation for other tools in the package for community ecology of metagenomic data.\n" 
 			print "\nThe files you are most interested in are entitled \"Contigs.fasta\" and \"Scaffolds.fasta\"."
 			print "\nThe assembly statistics can be found in the \"OutputNumbers.txt\"."
 
 		## MEGAHIT
-		if re.search("3|MEGAHIT", ASSEMBLER):
+		if re.search("3|megahit", ASSEMBLER):
 			print "\n\n-----Using MEGAHIT-----\n"
-       	                makeoutput(OUTPUT + "/MEGAHIT/" + sampleID)
 
 			# Run MEGAHIT  (super simple b/c it is flexible with file formats)
 			megahit(pe, se, sampleID)
 
 		## metaSPAdes
-		if re.search("4|metaSPAdes", ASSEMBLER):
+		if re.search("4|metaspades", ASSEMBLER):
 			print "\n\n-----Using metaSPAdes-----\n"
        	                makeoutput(OUTPUT + "/METASPADES/" + sampleID)
 
@@ -829,8 +816,8 @@ if re.search("2", PROCESSES):
 
 
 		## Zip FASTQ
-		Zip(pe)
-		Zip(se)
+		#Zip(pe)
+		#Zip(se)
 
 
 if LOG == 'ON':
