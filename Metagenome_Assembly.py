@@ -180,7 +180,7 @@ def UnZip(file):
         	file = re.sub(".bz2","", file)
 
 	if re.search(".gz", file):
-		print(' '.join([
+		os.system(' '.join([
 			"pigz -d",
 			file
 		]))
@@ -191,7 +191,7 @@ def UnZip(file):
 	return file
 
 def Zip(file):
-	print(' '.join([
+	os.system(' '.join([
 		"pigz -p",
 		PROCESSORS,
 		file,
@@ -199,7 +199,7 @@ def Zip(file):
 
 
 def Interleave(sampleID, file):
-	print(' '.join([
+	os.system(' '.join([
 		"interleave-reads.py",
 		file,
 		interleave,
@@ -222,7 +222,7 @@ def Interleave(sampleID, file):
 
 
 def Convert_FQ(x):
-	print(' '.join([
+	os.system(' '.join([
 		"fastq_to_fasta -n -i",
 		x,
 		"-o",
@@ -242,7 +242,7 @@ def Convert_FQ(x):
 	return x
 
 def FastX(IN,OUT):
-        print(' '.join([
+        os.system(' '.join([
                 "fastq_quality_filter",
                 "-Q"+QUAL_FORMAT,
                 "-q"+MIN_QUAL,
@@ -298,7 +298,7 @@ def EAUTILS(IN,OUT):
 
 
 def separate_paired_orphaned(file):
-	print(' '.join([
+	os.system(' '.join([
 		"extract-paired-reads.py",
 		file
 	]))
@@ -312,7 +312,7 @@ def separate_paired_orphaned(file):
 def deinterleave(file):
 	name = file.split("/")[len(file.split("/"))-1]
 
-	print(' '.join([
+	os.system(' '.join([
 		"split-paired-reads.py",
 		"-1",
 		name+".R1",
@@ -330,15 +330,15 @@ def flash(file):
 	if LOG == 'ON':
 		log.write("\nYou Selected To Merge Paired Reads Using FLASH.\n")
 
-	print(' '.join([
-		"flash --interleaved",
+	os.system(' '.join([
+		"flash2 --interleaved",
 		file,
 	]))
 
 	if LOG == 'ON':
-		command.write("\nflash --interleaved -z "+file)
+		command.write("\nflash2 --interleaved -z "+file)
 
-	print(' '.join([
+	os.system(' '.join([
 		"rm *.hist*",
 		file,
 	]))
@@ -354,7 +354,7 @@ def trimmomatic(file1, file2):
 		log.write("\nYou performed adapter trimming with"+ADAPTER+"as the adapter type.\n")
 
 	## Run Trimmomatic for Adapter Removal
-	print(' '.join([
+	os.system(' '.join([
 		"java -jar /opt/trimmomatic-0.36/trimmomatic-0.36.jar PE",
 		file1,
 		file2,
@@ -372,7 +372,7 @@ def trimmomatic(file1, file2):
 		]))
 
 	## Interleave Reads from the two paired ends files
-	print(' '.join([
+	os.system(' '.join([
 		"interleave-reads.py ./TRIM/s?_pe",
 		"> ./TRIM/combined.pe.fq"
 	]))
@@ -384,7 +384,7 @@ def trimmomatic(file1, file2):
 		]))
 
 	## Combined Orphaned Reads
-	print(' '.join([
+	os.system(' '.join([
 		"cat",
 		"./TRIM/s1_se",
 		"./TRIM/s2_se",
@@ -599,13 +599,13 @@ if re.search("1", PROCESSES):
 			pe, se = separate_paired_orphaned("./TRIM/combined-trim.fq")
 
 			#Re-locate Files for consistent processing
-			print(' '.join([
+			os.system(' '.join([
 				"mv",
 				pe,
 				"./TRIM/combined-trim.fq"
 			]))
 
-			print(' '.join([
+			os.system(' '.join([
 				"mv",
 				se,
 				"./TRIM/se.trim.fq"
@@ -622,7 +622,7 @@ if re.search("1", PROCESSES):
 
 				pe, se = separate_paired_orphaned("./FOO.trim.fq")
 
-				print(' '.join([
+				os.system(' '.join([
 					"cat",
 					pe,
 					"./TRIM/combined-trim.fq",
@@ -630,13 +630,13 @@ if re.search("1", PROCESSES):
 					"./FOO.fq"
 				]))
 
-				print(' '.join([
+				os.system(' '.join([
 					"mv",
 					"./FOO.fq",
 					"./TRIM/combined-trim.fq"
 				]))
 
-				print(' '.join([
+				os.system(' '.join([
 					"cat",
 					se,
 					"./TRIM/se.trim.fq",
@@ -644,13 +644,13 @@ if re.search("1", PROCESSES):
 					"./FOO.fq"
 				]))
 
-				print(' '.join([
+				os.system(' '.join([
 					"mv",
 					"./FOO.fq",
 					"./TRIM/se.trim.fq"
 				]))
 
-				print(' '.join([
+				os.system(' '.join([
 					"rm",
 					"./FOO.trim.fq"
 				]))
@@ -663,19 +663,19 @@ if re.search("1", PROCESSES):
 		## Merge Paired Reads using FLASH if user specified
 		if FLASH == "B":
 			## Save Files and Move to Output Folder
-			print(' '.join([
+			os.system(' '.join([
 				"cp",
 				"./TRIM/combined-trim.fq",
 				"./"+OUTPUT+"/"+sampleID+".pe.qc.fq"
 			]))
 
-			print(' '.join([
+			os.system(' '.join([
 				"cp",
 				"./TRIM/se.trim.fq",
 				"./"+OUTPUT+"/"+sampleID+".se.qc.fq"
 			]))
 
-			print(' '.join([
+			os.system(' '.join([
 				"pigz -p",
 				PROCESSORS,
 				"./"+OUTPUT+"/"+sampleID+".pe.qc.fq",
@@ -686,7 +686,7 @@ if re.search("1", PROCESSES):
 			se, pe = flash("./TRIM/combined-trim.fq")
 
 			## Merge orphaned single read files with newly extended single reads from FLASH
-			print(' '.join([
+			os.system(' '.join([
 				"cat",
 				se,
 				"./TRIM/se.trim.fq",
@@ -694,13 +694,13 @@ if re.search("1", PROCESSES):
 				"./"+OUTPUT+"/"+sampleID+".se.qc.fl.fq"
 			]))
 
-			print(' '.join([
+			os.system(' '.join([
 				"mv",
 				pe,
 				"./"+OUTPUT+"/"+sampleID+".pe.qc.fl.fq"
 			]))
 
-			print(' '.join([
+			os.system(' '.join([
 				"pigz -p",
 				PROCESSORS,
 				"./"+OUTPUT+"/"+sampleID+".pe.qc.fl.fq",
@@ -712,19 +712,19 @@ if re.search("1", PROCESSES):
 
 		else:
 			## Compress Files and Move to Output Folder
-			print(' '.join([
+			os.system(' '.join([
 				"mv",
 				"./TRIM/combined-trim.fq",
 				"./"+OUTPUT+"/"+sampleID+".pe.qc.fq"
 			]))
 
-			print(' '.join([
+			os.system(' '.join([
 				"mv",
 				"./TRIM/se.trim.fq",
 				"./"+OUTPUT+"/"+sampleID+".se.qc.fq"
 			]))
 
-			print(' '.join([
+			os.system(' '.join([
 				"pigz -p",
 				PROCESSORS,
 				"./"+OUTPUT+"/"+sampleID+".pe.qc.fq",
@@ -735,7 +735,7 @@ if re.search("1", PROCESSES):
 			OUTPUT_DICT[sampleID] = ["./"+OUTPUT+"/"+sampleID+".pe.qc.fq.gz","./"+OUTPUT+"/"+sampleID+".se.qc.fq.gz"]
 
 	## Remove Temp Folder "TRIM" and clean up
-	print(' '.join([
+	os.system(' '.join([
 		"rm -fr TRIM",
 		"out.extendedFrags.fastq",
 		"*pe",
